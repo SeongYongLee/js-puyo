@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <title>뿌요뿌요</title>
+    <style>
+        #puyo, #next-puyo {
+            border-collapse: collapse;
+        }
+        #next-puyo {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
+        #puyo td {
+            border: 1px solid black;
+            width: 30px;
+            height: 30px;
+        }
+        #next-puyo td {
+            border: 1px solid black;
+            width: 15px;
+            height: 15px;
+        }
+        td.red {
+            background-color: red;
+        }
+        td.blue {
+            background-color: blue;
+        }
+        td.green {
+            background-color: green;
+        }
+        td.purple {
+            background-color: purple;
+        }
+        td.yellow {
+            background-color: yellow;
+        }
+    </style>
+</head>
+<body>
+    <table id="puyo"></table>
+    <script src="./puyo.js"></script>
+
+</body>
+</html>
