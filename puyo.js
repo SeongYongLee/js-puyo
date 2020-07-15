@@ -3,6 +3,8 @@ const colorData = [];
 const blockData = [];
 const puyoColor = ['red', 'blue', 'green', 'yellow', 'purple']; // [0 = red, 1 = blue, 2 = green, 3 = yellow, 4 = purple]
 const selectColor = []; // 난이도에 의해 선택된 뿌요 색깔
+let gameStatus = true; // false = 게임 오버
+let puyoStatus = true; // true = 뿌요 움직일수 있음
 let difficulty = 4; // TODO 난이도 설정
 let currentPuyo = { // 현재 움직이는 뿌요
   rotate: 0, // 뿌요 중심 위치 [0 = 아래, 1 = 왼쪽, 2 = 위, 3 = 오른쪽]
@@ -15,7 +17,7 @@ let currentPuyo = { // 현재 움직이는 뿌요
 
 
 function init() { // 게임 실행 INIT
-  [...Array(13).keys()].forEach(()=> {
+  [...Array(16).keys()].forEach(()=> {
     const tr = document.createElement('tr');
     [...Array(6).keys()].forEach(()=> {
       const td = document.createElement('td');
@@ -37,35 +39,7 @@ function gamestart() { // 새로운 게임
   puyoGenerate();
 }
 
-function puyoGenerate() { // 뿌요 생성
-  if (colorData[0][2] === 'white') {
-    const puyo = [
-      selectColor.slice().splice(Math.floor(Math.random() * selectColor.length), 1)[0],
-      selectColor.slice().splice(Math.floor(Math.random() * selectColor.length), 1)[0]
-    ];
-    colorData[0][2] = puyo[1];
-    colorData[1][2] = puyo[0];
-    currentPuyo = {
-      rotate: 0,
-      doubleRotate: 0,
-      puyo: [
-        [puyo[0],1,2],
-        [puyo[1],0,2]
-      ]
-    }
-  } else {
-    gameover();
-  }
-  puyoDraw();
-}
-
-function gameover() {
-  alert('GAME OVER');
-}
-
-// 뿌요 그리기
-function puyoDraw() { 
-  console.table(colorData);
+function puyoDraw() { // 뿌요 그리기
   colorData.forEach((tr, i) => {
     tr.forEach((td, j) => {
       puyo.children[i].children[j].className = td !== 0 ? td : '';
@@ -73,8 +47,66 @@ function puyoDraw() {
   });
 }
 
-// 뿌요 회전
-function puyoRotateInit(rotate) { 
+function puyoDrop() { // 뿌요 블럭화
+  puyoStatus = false;
+  blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = 'block';
+  blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = 'block';
+  puyoDown([0, 1, 2, 3, 4, 5]);
+}
+
+function puyoDown(down) { // 빈 공간 뿌요 떨어짐
+  let isDown = false;
+  const isDownSet = new Set(); // Set 활용하여 알고리즘 개선
+  for (let td = 0; td < down.length; td++) {
+    let isBlank = false;
+    for (let tr = blockData.length - 1; tr >= 0; tr--) {
+      if(!isBlank && blockData[tr][down[td]] === 'blank') isBlank = true;
+      if(isBlank && blockData[tr][down[td]] === 'block') {
+        isDown = true;
+        isDownSet.add(down[td]);
+        blockData[tr + 1][down[td]] = 'block';
+        blockData[tr][down[td]] = 'blank';
+        colorData[tr + 1][down[td]] = colorData[tr][down[td]];
+        colorData[tr][down[td]] = 'white';
+      }
+    }
+  }
+  puyoDraw();
+  if (isDownSet) down = [...isDownSet];
+  if (down.length) setTimeout(() => puyoDown(down), 100);
+  else puyoGenerate();
+}
+
+function puyoGenerate() { // 뿌요 생성
+  console.table(blockData)
+  if (blockData[4][2] === 'blank') {
+    const puyo = [
+      selectColor.slice().splice(Math.floor(Math.random() * selectColor.length), 1)[0],
+      selectColor.slice().splice(Math.floor(Math.random() * selectColor.length), 1)[0]
+    ];
+    colorData[4][2] = puyo[0];
+    colorData[3][2] = puyo[1];
+    currentPuyo = {
+      rotate: 0,
+      doubleRotate: 0,
+      puyo: [
+        [puyo[0],4,2],
+        [puyo[1],3,2]
+      ]
+    }
+  } else {
+    gameover();
+  }
+  puyoDraw();
+  puyoStatus = true;
+}
+
+function gameover() {
+  gameStatus = false;
+  alert('GAME OVER');
+}
+
+function puyoRotateInit(rotate) { // 뿌요 회전
   const tempRotate = rotate === 'right' ? (currentPuyo.rotate + 1) % 4 : (currentPuyo.rotate + (4 - 1)) % 4;
   const tr = currentPuyo.puyo[0][1]; // 코드 가독성을 위해
   const td = currentPuyo.puyo[0][2];
@@ -94,13 +126,11 @@ function puyoRotateInit(rotate) {
         currentPuyo.doubleRotate = 0;
         puyoMove([tr, td - 1],[tr, td])
       } else if (currentPuyo.doubleRotate === rotate){
-        currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
+        currentPuyo.rotate = currentPuyo.rotate === 0 ? 2 : 0;
         currentPuyo.doubleRotate = 0;
-        if (blockData[tr + 1] && blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
-          puyoMove([tr, td],[tr + 1, td])
-        } else {
-          puyoMove([tr - 1, td],[tr, td])
-        }
+        rotate === 'right' 
+        ? blockData[tr + 1] && blockData[tr + 1][td] === 'blank' ? puyoMove([tr, td],[tr + 1, td]): puyoMove([tr - 1, td],[tr, td])
+        : puyoMove([tr, td],[tr - 1, td]);
       } else {
         currentPuyo.doubleRotate = rotate;
       }
@@ -124,13 +154,11 @@ function puyoRotateInit(rotate) {
         currentPuyo.doubleRotate = 0;
         puyoMove([tr, td + 1],[tr, td])
       } else if (currentPuyo.doubleRotate === rotate){
-        currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
+        currentPuyo.rotate = currentPuyo.rotate === 0 ? 2 : 0;
         currentPuyo.doubleRotate = 0;
-        if (blockData[tr + 1] && blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
-          puyoMove([tr, td],[tr + 1, td])
-        } else {
-          puyoMove([tr - 1, td],[tr, td])
-        }
+        rotate === 'right' 
+        ? puyoMove([tr, td],[tr - 1, td])
+        : blockData[tr + 1] && blockData[tr + 1][td] === 'blank' ? puyoMove([tr, td],[tr + 1, td]): puyoMove([tr - 1, td],[tr, td]);
       } else {
         currentPuyo.doubleRotate = rotate;
       }
@@ -138,8 +166,7 @@ function puyoRotateInit(rotate) {
   }
 }
 
-// 뿌요 이동
-function puyoMove(puyo0, puyo1) {
+function puyoMove(puyo0, puyo1) { // 뿌요 이동
   colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = 'white';
   colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = 'white';
   currentPuyo.puyo[0][1] = puyo0[0];
@@ -153,45 +180,50 @@ function puyoMove(puyo0, puyo1) {
 
 init();
 
-window.addEventListener('keydown', (e) => {
-  switch (e.code) {
-    case 'KeyZ':
-      puyoRotateInit('left');
-      break;
-    case 'KeyX':
-      puyoRotateInit('right');
-      break;
-    case 'ArrowLeft':
-      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] === 'blank'
-      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] === 'blank' ) {
-        puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] - 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] - 1]);
-      }
-      break;
-    case 'ArrowRight':
-      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] === 'blank'
-      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] === 'blank' ) {
-        puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] + 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] + 1]);
-      }
-      break;
-    case 'ArrowDown':
-      if(blockData[currentPuyo.puyo[0][1] + 1] && blockData[currentPuyo.puyo[1][1] + 1]
-      && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] === 'blank'
-      && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] === 'blank' ) {
-        puyoMove([currentPuyo.puyo[0][1] + 1, currentPuyo.puyo[0][2]],[currentPuyo.puyo[1][1] + 1, currentPuyo.puyo[1][2]]);
-      }
-      break;
+window.addEventListener('keydown', e => {
+  if (puyoStatus && gameStatus) {
+    switch (e.code) {
+      case 'KeyZ':
+        puyoRotateInit('left');
+        break;
+      case 'KeyX':
+        puyoRotateInit('right');
+        break;
+      case 'ArrowLeft':
+        if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] === 'blank'
+        && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] === 'blank' ) {
+          puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] - 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] - 1]);
+        }
+        break;
+      case 'ArrowRight':
+        if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] === 'blank'
+        && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] === 'blank' ) {
+          puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] + 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] + 1]);
+        }
+        break;
+      case 'ArrowDown':
+        if(blockData[currentPuyo.puyo[0][1] + 1] && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] === 'blank'
+        && blockData[currentPuyo.puyo[1][1] + 1] && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] === 'blank') {
+          puyoMove([currentPuyo.puyo[0][1] + 1, currentPuyo.puyo[0][2]],[currentPuyo.puyo[1][1] + 1, currentPuyo.puyo[1][2]]);
+        } else {
+          puyoDrop();
+        }
+        break;
+    }
   }
 });
 
-window.addEventListener('keyup', (e) => {
-  switch (e.code) {
-    case 'ArrowUp':
-    case 'Space':
-      let x = 1;
-      while (blockData[currentPuyo.puyo[0][1] + x] && blockData[currentPuyo.puyo[1][1] + x]
-      && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] === 'blank'
-      && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] === 'blank') x++;
-      puyoMove([currentPuyo.puyo[0][1] + x - 1, currentPuyo.puyo[0][2]], [currentPuyo.puyo[1][1] + x - 1, currentPuyo.puyo[1][2]])
-      break;
+window.addEventListener('keyup', e => {
+  if (puyoStatus && gameStatus) {
+    switch (e.code) {
+      case 'ArrowUp':
+      case 'Space':
+        let x = 1;
+        while (blockData[currentPuyo.puyo[0][1] + x] && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] === 'blank'
+        && blockData[currentPuyo.puyo[1][1] + x] && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] === 'blank') x++;
+        puyoMove([currentPuyo.puyo[0][1] + x - 1, currentPuyo.puyo[0][2]], [currentPuyo.puyo[1][1] + x - 1, currentPuyo.puyo[1][2]]);
+        puyoDrop();
+        break;
+    }
   }
 });
