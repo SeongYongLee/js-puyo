@@ -96,7 +96,7 @@ function puyoRotateInit(rotate) {
       } else if (currentPuyo.doubleRotate === rotate){
         currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
         currentPuyo.doubleRotate = 0;
-        if (blockData[tr][td] && blockData[tr + 1][td] === 'blank') {
+        if (blockData[tr + 1] && blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
           puyoMove([tr, td],[tr + 1, td])
         } else {
           puyoMove([tr - 1, td],[tr, td])
@@ -108,7 +108,7 @@ function puyoRotateInit(rotate) {
     case 2 :
       currentPuyo.rotate = tempRotate;
       currentPuyo.doubleRotate = 0;
-      if (blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
+      if (blockData[tr + 1] && blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
         puyoMove([tr, td],[tr + 1, td])
       } else {
         puyoMove([tr - 1, td],[tr, td])
@@ -126,7 +126,7 @@ function puyoRotateInit(rotate) {
       } else if (currentPuyo.doubleRotate === rotate){
         currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
         currentPuyo.doubleRotate = 0;
-        if (blockData[tr][td] && blockData[tr + 1][td] === 'blank') {
+        if (blockData[tr + 1] && blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
           puyoMove([tr, td],[tr + 1, td])
         } else {
           puyoMove([tr - 1, td],[tr, td])
@@ -174,6 +174,11 @@ window.addEventListener('keydown', (e) => {
       }
       break;
     case 'ArrowDown':
+      if(blockData[currentPuyo.puyo[0][1] + 1] && blockData[currentPuyo.puyo[1][1] + 1]
+      && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] === 'blank'
+      && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] === 'blank' ) {
+        puyoMove([currentPuyo.puyo[0][1] + 1, currentPuyo.puyo[0][2]],[currentPuyo.puyo[1][1] + 1, currentPuyo.puyo[1][2]]);
+      }
       break;
   }
 });
@@ -182,6 +187,11 @@ window.addEventListener('keyup', (e) => {
   switch (e.code) {
     case 'ArrowUp':
     case 'Space':
+      let x = 1;
+      while (blockData[currentPuyo.puyo[0][1] + x] && blockData[currentPuyo.puyo[1][1] + x]
+      && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] === 'blank'
+      && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] === 'blank') x++;
+      puyoMove([currentPuyo.puyo[0][1] + x - 1, currentPuyo.puyo[0][2]], [currentPuyo.puyo[1][1] + x - 1, currentPuyo.puyo[1][2]])
       break;
   }
 });
