@@ -6,6 +6,7 @@ const selectColor = []; // 난이도에 의해 선택된 뿌요 색깔
 let difficulty = 4; // TODO 난이도 설정
 let currentPuyo = { // 현재 움직이는 뿌요
   rotate: 0, // 뿌요 중심 위치 [0 = 아래, 1 = 왼쪽, 2 = 위, 3 = 오른쪽]
+  doubleRotate: 0, // 이중 회전 스위치
   puyo: [ // 각 뿌요의 색깔, tr, td
     ['',0,0],
     ['',0,0]
@@ -46,6 +47,7 @@ function puyoGenerate() { // 뿌요 생성
     colorData[1][2] = puyo[0];
     currentPuyo = {
       rotate: 0,
+      doubleRotate: 0,
       puyo: [
         [puyo[0],1,2],
         [puyo[1],0,2]
@@ -73,29 +75,80 @@ function puyoDraw() {
 
 // 뿌요 회전
 function puyoRotateInit(rotate) { 
-  currentPuyo.rotate = rotate === 'right' ? (currentPuyo.rotate + 1) % 4 : (currentPuyo.rotate + (4 - 1)) % 4;
-  switch (currentPuyo.rotate) {
+  const tempRotate = rotate === 'right' ? (currentPuyo.rotate + 1) % 4 : (currentPuyo.rotate + (4 - 1)) % 4;
+  const tr = currentPuyo.puyo[0][1]; // 코드 가독성을 위해
+  const td = currentPuyo.puyo[0][2];
+  switch (tempRotate) { // 뿌요 중심 위치 [0 = 아래, 1 = 왼쪽, 2 = 위, 3 = 오른쪽]
     case 0 :
-      puyoRotate(currentPuyo.puyo[0][1]-1, currentPuyo.puyo[0][2]);
+      currentPuyo.rotate = tempRotate;
+      currentPuyo.doubleRotate = 0;
+      puyoMove([tr, td],[tr - 1, td])
       break;
     case 1 :
-      puyoRotate(currentPuyo.puyo[0][1], currentPuyo.puyo[0][2]+1);
+      if (blockData[tr][td + 1] && blockData[tr][td + 1] === 'blank') {
+        currentPuyo.rotate = tempRotate;
+        currentPuyo.doubleRotate = 0;
+        puyoMove([tr, td],[tr, td + 1])
+      } else if (blockData[tr][td - 1] && blockData[tr][td - 1] === 'blank'){
+        currentPuyo.rotate = tempRotate;
+        currentPuyo.doubleRotate = 0;
+        puyoMove([tr, td - 1],[tr, td])
+      } else if (currentPuyo.doubleRotate === rotate){
+        currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
+        currentPuyo.doubleRotate = 0;
+        if (blockData[tr][td] && blockData[tr + 1][td] === 'blank') {
+          puyoMove([tr, td],[tr + 1, td])
+        } else {
+          puyoMove([tr - 1, td],[tr, td])
+        }
+      } else {
+        currentPuyo.doubleRotate = rotate;
+      }
       break;
     case 2 :
-      puyoRotate(currentPuyo.puyo[0][1]+1, currentPuyo.puyo[0][2]);
+      currentPuyo.rotate = tempRotate;
+      currentPuyo.doubleRotate = 0;
+      if (blockData[tr + 1][td] && blockData[tr + 1][td] === 'blank') {
+        puyoMove([tr, td],[tr + 1, td])
+      } else {
+        puyoMove([tr - 1, td],[tr, td])
+      }
       break;
     case 3 :
-      puyoRotate(currentPuyo.puyo[0][1], currentPuyo.puyo[0][2]-1);
+      if (blockData[tr][td - 1] && blockData[tr][td - 1] === 'blank') {
+        currentPuyo.rotate = tempRotate;
+        currentPuyo.doubleRotate = 0;
+        puyoMove([tr, td],[tr, td - 1])
+      } else if (blockData[tr][td + 1] && blockData[tr][td + 1] === 'blank'){
+        currentPuyo.rotate = tempRotate;
+        currentPuyo.doubleRotate = 0;
+        puyoMove([tr, td + 1],[tr, td])
+      } else if (currentPuyo.doubleRotate === rotate){
+        currentPuyo.rotate = rotate === 'right' ? (tempRotate + 1) % 4 : (tempRotate + (4 - 1)) % 4;
+        currentPuyo.doubleRotate = 0;
+        if (blockData[tr][td] && blockData[tr + 1][td] === 'blank') {
+          puyoMove([tr, td],[tr + 1, td])
+        } else {
+          puyoMove([tr - 1, td],[tr, td])
+        }
+      } else {
+        currentPuyo.doubleRotate = rotate;
+      }
       break;
   }
 }
-function puyoRotate(tr,td) {
-  if (blockData[tr][td] && blockData[tr][td] === 'blank') {
-    colorData[tr][td] = colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]]
-    colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = 'white';
-    currentPuyo.puyo[1] = [currentPuyo.puyo[1][0], tr, td];
-    puyoDraw();
-  }
+
+// 뿌요 이동
+function puyoMove(puyo0, puyo1) {
+  colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = 'white';
+  colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = 'white';
+  currentPuyo.puyo[0][1] = puyo0[0];
+  currentPuyo.puyo[0][2] = puyo0[1];
+  currentPuyo.puyo[1][1] = puyo1[0];
+  currentPuyo.puyo[1][2] = puyo1[1];
+  colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = currentPuyo.puyo[0][0];
+  colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = currentPuyo.puyo[1][0];
+  puyoDraw();
 }
 
 init();
@@ -109,23 +162,15 @@ window.addEventListener('keydown', (e) => {
       puyoRotateInit('right');
       break;
     case 'ArrowLeft':
-      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]-1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]-1] === 'blank'
-      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]-1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]-1] === 'blank' ) {
-        colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]--] = 'white';
-        colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]--] = 'white';
-        colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = currentPuyo.puyo[0][0];
-        colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = currentPuyo.puyo[1][0];
-        puyoDraw();
+      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] - 1] === 'blank'
+      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] - 1] === 'blank' ) {
+        puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] - 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] - 1]);
       }
       break;
     case 'ArrowRight':
-      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]+1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]+1] === 'blank'
-      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]+1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]+1] === 'blank' ) {
-        colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]++] = 'white';
-        colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]++] = 'white';
-        colorData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = currentPuyo.puyo[0][0];
-        colorData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = currentPuyo.puyo[1][0];
-        puyoDraw();
+      if(blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] && blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2] + 1] === 'blank'
+      && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] && blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2] + 1] === 'blank' ) {
+        puyoMove([currentPuyo.puyo[0][1], currentPuyo.puyo[0][2] + 1],[currentPuyo.puyo[1][1], currentPuyo.puyo[1][2] + 1]);
       }
       break;
     case 'ArrowDown':
