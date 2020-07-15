@@ -80,19 +80,73 @@ function puyoDown(down) { // 빈 공간 뿌요 떨어짐
 
 function puyoDelete() { // 뿌요 삭제
   let isDelete = false;
-  const deleteTable = Array(16).fill(Array(6).fill(0));
+  let deleteGroup = [];
+  const deleteData = [];
+  [...Array(16).keys()].forEach(() => {
+    deleteData.push(Array(6).fill(null));
+  });
   
-  for (let tr = colorData.length - 1; tr >= 0; tr--) {
-    colorData[tr].forEach((td, j) => {
+  for (let i = colorData.length - 1; i >= 0; i--) {
+    blockData[i].forEach((td, j) => {
+      if (td === 'block') {
+        if (blockData[i + 1] && blockData[i + 1][j] === 'block' && colorData[i][j] === colorData[i + 1][j]) {
+          if (deleteData[i + 1][j] !== null) {
+            if (deleteData[i][j] !== null) {
+              deleteGroup[deleteGroup.length - 1].forEach(x => {
+                deleteData[x[0]][x[1]] = deleteData[i + 1][j];
+                deleteGroup[deleteData[i + 1][j]].push([x[0], x[1]]);
+              })
+              deleteGroup.pop();
+            } else {
+              deleteData[i][j] = deleteData[i + 1][j];
+              deleteGroup[deleteData[i][j]].push([i, j]);
+            }
+          } else {
+            if (deleteData[i][j] !== null) {
+              deleteData[i + 1][j] = deleteData[i][j];
+              deleteGroup[deleteData[i + 1][j]].push([i + 1, j]);
+            } else {
+              deleteData[i][j] = deleteGroup.length;
+              deleteData[i + 1][j] = deleteGroup.length;
+              deleteGroup.push([[i, j], [i + 1, j]]);
+            }
+          }
+          // console.table(deleteData)
+        } 
+        if (blockData[i][j + 1] === 'block' && colorData[i][j] === colorData[i][j + 1]) {
+          if (deleteData[i][j] !== null) {
+            deleteData[i][j + 1] = deleteData[i][j];
+            deleteGroup[deleteData[i][j]].push([i, j + 1])
+          } else {
+            deleteData[i][j] = deleteGroup.length;
+            deleteData[i][j + 1] = deleteGroup.length;
+            deleteGroup.push([[i, j], [i, j + 1]]);
+          }
+          // console.table(deleteData)
+        } 
+      }
     });
   }
+  // console.table(blockData)
+  // console.table(colorData)
+  // console.table(deleteData)
+  // console.log(deleteGroup)
+  deleteGroup.forEach(x => {
+    if (x.length >= 4) {
+      x.forEach(y => {
+        colorData[y[0]][y[1]] = 'white';
+        blockData[y[0]][y[1]] = 'blank';
+      })
+      isDelete = true;
+    }
+  })
 
   if (isDelete) puyoDown([0, 1, 2, 3, 4, 5]);
   else puyoGenerate();
 }
 
 function puyoGenerate() { // 뿌요 생성
-  console.table(blockData)
+  // console.table(blockData)
   if (blockData[4][2] === 'blank') {
     const puyo = [
       selectColor.slice().splice(Math.floor(Math.random() * selectColor.length), 1)[0],
@@ -122,7 +176,7 @@ function gameover() {
 
 function puyoRotateInit(rotate) { // 뿌요 회전
   const tempRotate = rotate === 'right' ? (currentPuyo.rotate + 1) % 4 : (currentPuyo.rotate + (4 - 1)) % 4;
-  const tr = currentPuyo.puyo[0][1]; // 코드 가독성을 위해
+  const tr = currentPuyo.puyo[0][1]; // 코드 가독성 위해 상수 선언
   const td = currentPuyo.puyo[0][2];
   switch (tempRotate) { // 뿌요 중심 위치 [0 = 아래, 1 = 왼쪽, 2 = 위, 3 = 오른쪽]
     case 0 :
