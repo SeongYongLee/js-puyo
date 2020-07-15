@@ -78,30 +78,32 @@ function puyoDown(down) { // 빈 공간 뿌요 떨어짐
   else puyoDelete();
 }
 
-function puyoDelete() { // 뿌요 삭제
+function puyoDelete() { // 뿌요 삭제 알고리즘 v1
   let isDelete = false;
   let deleteGroup = [];
   const deleteData = [];
   [...Array(16).keys()].forEach(() => {
     deleteData.push(Array(6).fill(null));
   });
-  
+
   for (let i = colorData.length - 1; i >= 0; i--) {
     blockData[i].forEach((td, j) => {
       if (td === 'block') {
-        if (blockData[i + 1] && blockData[i + 1][j] === 'block' && colorData[i][j] === colorData[i + 1][j]) {
+        if (blockData[i + 1] && blockData[i + 1][j] === 'block' && colorData[i][j] === colorData[i + 1][j]) { // 색 비교 (열)
           if (deleteData[i + 1][j] !== null) {
-            if (deleteData[i][j] !== null) {
+            // console.log(3)
+            if (deleteData[i][j] === null) {
+              deleteData[i][j] = deleteData[i + 1][j];
+              deleteGroup[deleteData[i][j]].push([i, j]);
+            } else if (deleteData[i + 1][j] !== deleteData[i][j]) {
               deleteGroup[deleteGroup.length - 1].forEach(x => {
                 deleteData[x[0]][x[1]] = deleteData[i + 1][j];
                 deleteGroup[deleteData[i + 1][j]].push([x[0], x[1]]);
               })
               deleteGroup.pop();
-            } else {
-              deleteData[i][j] = deleteData[i + 1][j];
-              deleteGroup[deleteData[i][j]].push([i, j]);
             }
           } else {
+            // console.log(4)
             if (deleteData[i][j] !== null) {
               deleteData[i + 1][j] = deleteData[i][j];
               deleteGroup[deleteData[i + 1][j]].push([i + 1, j]);
@@ -111,26 +113,22 @@ function puyoDelete() { // 뿌요 삭제
               deleteGroup.push([[i, j], [i + 1, j]]);
             }
           }
-          // console.table(deleteData)
         } 
-        if (blockData[i][j + 1] === 'block' && colorData[i][j] === colorData[i][j + 1]) {
+        if (blockData[i][j + 1] === 'block' && colorData[i][j] === colorData[i][j + 1]) { // 색 비교 (행)
           if (deleteData[i][j] !== null) {
+            // console.log(1)
             deleteData[i][j + 1] = deleteData[i][j];
             deleteGroup[deleteData[i][j]].push([i, j + 1])
           } else {
+            // console.log(2)
             deleteData[i][j] = deleteGroup.length;
             deleteData[i][j + 1] = deleteGroup.length;
             deleteGroup.push([[i, j], [i, j + 1]]);
           }
-          // console.table(deleteData)
         } 
       }
     });
   }
-  // console.table(blockData)
-  // console.table(colorData)
-  // console.table(deleteData)
-  // console.log(deleteGroup)
   deleteGroup.forEach(x => {
     if (x.length >= 4) {
       x.forEach(y => {
@@ -140,6 +138,11 @@ function puyoDelete() { // 뿌요 삭제
       isDelete = true;
     }
   })
+  // console.table(blockData)
+  // console.table(colorData)
+  // console.table(deleteData)
+  // console.log(deleteGroup)
+  // console.log('----------------------------------')
 
   if (isDelete) puyoDown([0, 1, 2, 3, 4, 5]);
   else puyoGenerate();
