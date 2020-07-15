@@ -1,8 +1,8 @@
 const puyo = document.querySelector('#puyo');
-const colorData = [];
-const blockData = [];
 const puyoColor = ['red', 'blue', 'green', 'yellow', 'purple']; // [0 = red, 1 = blue, 2 = green, 3 = yellow, 4 = purple]
 const selectColor = []; // 난이도에 의해 선택된 뿌요 색깔
+const colorData = [];
+const blockData = [];
 let gameStatus = true; // false = 게임 오버
 let puyoStatus = true; // true = 뿌요 움직일수 있음
 let difficulty = 4; // TODO 난이도 설정
@@ -15,16 +15,13 @@ let currentPuyo = { // 현재 움직이는 뿌요
   ]
 }  
 
-
-function init() { // 게임 실행 INIT
-  [...Array(16).keys()].forEach(()=> {
+function init() { // 게임 준비
+  [...Array(16).keys()].forEach(() => {
     const tr = document.createElement('tr');
-    [...Array(6).keys()].forEach(()=> {
+    [...Array(6).keys()].forEach(() => {
       const td = document.createElement('td');
       tr.appendChild(td);
     });
-    colorData.push(Array(6).fill('white'));
-    blockData.push(Array(6).fill('blank'));
     puyo.appendChild(tr);
   });
   gamestart();
@@ -36,6 +33,12 @@ function gamestart() { // 새로운 게임
   while (selectColor.length < difficulty) { // 난이도에 따른 뿌요의 색깔을 정합니다.
     selectColor.push(tempColor.splice(Math.floor(Math.random() * tempColor.length), 1)[0]);
   }
+  colorData.length = 0;
+  blockData.length = 0;
+  [...Array(16).keys()].forEach(() => {
+    colorData.push(Array(6).fill('white'));
+    blockData.push(Array(6).fill('blank'));
+  });
   puyoGenerate();
 }
 
@@ -55,25 +58,36 @@ function puyoDrop() { // 뿌요 블럭화
 }
 
 function puyoDown(down) { // 빈 공간 뿌요 떨어짐
-  let isDown = false;
   const isDownSet = new Set(); // Set 활용하여 알고리즘 개선
-  for (let td = 0; td < down.length; td++) {
+  down.forEach(td => {
     let isBlank = false;
     for (let tr = blockData.length - 1; tr >= 0; tr--) {
-      if(!isBlank && blockData[tr][down[td]] === 'blank') isBlank = true;
-      if(isBlank && blockData[tr][down[td]] === 'block') {
-        isDown = true;
-        isDownSet.add(down[td]);
-        blockData[tr + 1][down[td]] = 'block';
-        blockData[tr][down[td]] = 'blank';
-        colorData[tr + 1][down[td]] = colorData[tr][down[td]];
-        colorData[tr][down[td]] = 'white';
+      if(!isBlank && blockData[tr][td] === 'blank') isBlank = true;
+      if(isBlank && blockData[tr][td] === 'block') {
+        isDownSet.add(td);
+        blockData[tr + 1][td] = 'block';
+        blockData[tr][td] = 'blank';
+        colorData[tr + 1][td] = colorData[tr][td];
+        colorData[tr][td] = 'white';
       }
     }
-  }
+  })
   puyoDraw();
   if (isDownSet) down = [...isDownSet];
   if (down.length) setTimeout(() => puyoDown(down), 100);
+  else puyoDelete();
+}
+
+function puyoDelete() { // 뿌요 삭제
+  let isDelete = false;
+  const deleteTable = Array(16).fill(Array(6).fill(0));
+  
+  for (let tr = colorData.length - 1; tr >= 0; tr--) {
+    colorData[tr].forEach((td, j) => {
+    });
+  }
+
+  if (isDelete) puyoDown([0, 1, 2, 3, 4, 5]);
   else puyoGenerate();
 }
 
