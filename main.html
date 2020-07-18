@@ -7,6 +7,10 @@
     <style>
         #puyo, #next-puyo {
             border-collapse: collapse;
+            display: inline-block;
+        }
+        #score {
+            display: inline-block;
         }
         #next-puyo {
             position: absolute;
@@ -45,7 +49,12 @@
 </head>
 <body>
     <table id="puyo"></table>
-    <table>
+    <table id="score">
+        <tr>
+            <td>SCORE</td><td id="current-score">0</td>
+        </tr>
+    </table>
+    <table id="how">
         <tr>
             <td>이동(좌)</td><td>Left Arrow</td>
         </tr>

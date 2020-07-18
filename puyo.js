@@ -1,4 +1,5 @@
 const puyo = document.querySelector('#puyo');
+const score = document.querySelector('#current-score'); // 점수
 const puyoColor = ['red', 'blue', 'green', 'yellow', 'purple']; // [0 = red, 1 = blue, 2 = green, 3 = yellow, 4 = purple]
 const selectColor = []; // 난이도에 의해 선택된 뿌요 색깔
 const colorData = [];
@@ -6,6 +7,7 @@ const blockData = [];
 let gameStatus = true; // false = 게임 오버
 let puyoStatus = true; // true = 뿌요 움직일수 있음
 let difficulty = 4; // TODO 난이도 설정
+let chainCount = [0, 8, 16, 32, 48, 96, 160, 240, 320, 480, 600, 700, 800, 900, 999, 999, 999, 999, 999, 999]; // 연쇄 상수 배열
 let currentPuyo = { // 현재 움직이는 뿌요
   rotate: 0, // 뿌요 중심 위치 [0 = 아래, 1 = 왼쪽, 2 = 위, 3 = 오른쪽]
   doubleRotate: 0, // 이중 회전 스위치
@@ -30,6 +32,7 @@ function init() { // 게임 준비
 function gamestart() { // 새로운 게임
   const tempColor = puyoColor.slice();
   selectColor.length = 0;
+  score.textContent = 1
   while (selectColor.length < difficulty) { // 난이도에 따른 뿌요의 색깔을 정합니다.
     selectColor.push(tempColor.splice(Math.floor(Math.random() * tempColor.length), 1)[0]);
   }
@@ -54,10 +57,10 @@ function puyoDrop() { // 뿌요 블럭화
   puyoStatus = false;
   blockData[currentPuyo.puyo[0][1]][currentPuyo.puyo[0][2]] = 'block';
   blockData[currentPuyo.puyo[1][1]][currentPuyo.puyo[1][2]] = 'block';
-  puyoDown([0, 1, 2, 3, 4, 5]);
+  puyoDown([0, 1, 2, 3, 4, 5], 0);
 }
 
-function puyoDown(down) { // 빈 공간 뿌요 떨어짐
+function puyoDown(down, chain) { // 빈 공간 뿌요 떨어짐
   const isDownSet = new Set(); // Set 활용하여 알고리즘 개선
   down.forEach(td => {
     let isBlank = false;
@@ -73,12 +76,11 @@ function puyoDown(down) { // 빈 공간 뿌요 떨어짐
     }
   })
   puyoDraw();
-  if (isDownSet) down = [...isDownSet];
-  if (down.length) setTimeout(() => puyoDown(down), 100);
-  else puyoDelete();
+  if (isDownSet.size) setTimeout(() => puyoDown([...isDownSet], chain), 100);
+  else puyoDelete(chain);
 }
 
-function puyoDelete() { // 뿌요 삭제 알고리즘 v1
+function puyoDelete(chain) { // 뿌요 삭제 알고리즘 v1
   let isDelete = false;
   let deleteGroup = [];
   const deleteData = [];
@@ -129,23 +131,44 @@ function puyoDelete() { // 뿌요 삭제 알고리즘 v1
       }
     });
   }
-  deleteGroup.forEach(x => {
+
+  let puyoCount = 0; // 점수 보너스 (뿌요 개수, 연결, 색)
+  let connectCount = 0;
+  const colorCount = new Set();
+
+  deleteGroup.forEach(x => { // 뿌요 삭제
     if (x.length >= 4) {
+      colorCount.add(colorData[x[0][0]][x[0][1]])
       x.forEach(y => {
         colorData[y[0]][y[1]] = 'white';
         blockData[y[0]][y[1]] = 'blank';
       })
+      puyoCount += x.length;
+      switch (x.length) {
+        case 4 : connectCount += 0; break;
+        case 5 : connectCount += 2; break;
+        case 6 : connectCount += 3; break;
+        case 7 : connectCount += 4; break;
+        case 8 : connectCount += 5; break;
+        case 9 : connectCount += 6; break;
+        case 10 : connectCount += 7; break;
+        default : connectCount += 10; break;
+      }
       isDelete = true;
     }
   })
+  
   // console.table(blockData)
   // console.table(colorData)
   // console.table(deleteData)
   // console.log(deleteGroup)
   // console.log('----------------------------------')
-
-  if (isDelete) puyoDown([0, 1, 2, 3, 4, 5]);
-  else puyoGenerate();
+  console.log(chainCount[chain], connectCount, colorCount.size)
+  if (isDelete) {
+    const bounsScore = chainCount[chain] + connectCount + colorCount.size
+    score.textContent = +score.textContent + (puyoCount * 10) * (bounsScore ? bounsScore : 1);
+    puyoDown([0, 1, 2, 3, 4, 5], ++chain);
+  } else puyoGenerate();
 }
 
 function puyoGenerate() { // 뿌요 생성
@@ -275,6 +298,7 @@ window.addEventListener('keydown', e => {
       case 'ArrowDown':
         if(blockData[currentPuyo.puyo[0][1] + 1] && blockData[currentPuyo.puyo[0][1] + 1][currentPuyo.puyo[0][2]] === 'blank'
         && blockData[currentPuyo.puyo[1][1] + 1] && blockData[currentPuyo.puyo[1][1] + 1][currentPuyo.puyo[1][2]] === 'blank') {
+          score.textContent = +score.textContent + 1;
           puyoMove([currentPuyo.puyo[0][1] + 1, currentPuyo.puyo[0][2]],[currentPuyo.puyo[1][1] + 1, currentPuyo.puyo[1][2]]);
         } else {
           puyoDrop();
@@ -293,6 +317,7 @@ window.addEventListener('keyup', e => {
         while (blockData[currentPuyo.puyo[0][1] + x] && blockData[currentPuyo.puyo[0][1] + x][currentPuyo.puyo[0][2]] === 'blank'
         && blockData[currentPuyo.puyo[1][1] + x] && blockData[currentPuyo.puyo[1][1] + x][currentPuyo.puyo[1][2]] === 'blank') x++;
         puyoMove([currentPuyo.puyo[0][1] + x - 1, currentPuyo.puyo[0][2]], [currentPuyo.puyo[1][1] + x - 1, currentPuyo.puyo[1][2]]);
+        score.textContent = +score.textContent + x - 1;
         puyoDrop();
         break;
     }
